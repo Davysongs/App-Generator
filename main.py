@@ -1,8 +1,8 @@
-import os
-import zipfile
-import openai
 import logging
-from tqdm import tqdm  # for progress indication
+import openai
+import os
+from tqdm import tqdm 
+import zipfile
 
 # Security: Store API key in environment variable
 openai.api_key = os.environ.get("OPENAI_API_KEY")
