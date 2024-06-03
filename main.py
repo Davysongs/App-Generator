@@ -1,7 +1,7 @@
 import logging
 import openai
 import os
-from tqdm import tqdm 
+from tqdm import tqdm
 import zipfile
 
 # Security: Store API key in environment variable
@@ -35,7 +35,7 @@ def generate_file_structure(prompt):
     """
     try:
         response = openai.Completion.create(
-            engine="text-davinci-003",  # Confirmed available model
+            model="gpt-3.5-turbo",  # Confirmed available model
             prompt=prompt,
             max_tokens=150,  # Limit prompt length to avoid exceeding API limits
             n=1,
@@ -66,7 +66,7 @@ def generate_files_from_structure(file_structure, initial_requirements, max_file
         prompt = f"Generate the content for {file_path} based on the initial requirements: {initial_requirements}"
         try:
             response = openai.Completion.create(
-                engine="text-davinci-003",
+                model="gpt-3.5-turbo",
                 prompt=prompt,
                 max_tokens=500,  # Limit content length to avoid exceeding API limits
                 n=1,
