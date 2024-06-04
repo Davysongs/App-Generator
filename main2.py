@@ -1,17 +1,23 @@
 import logging
-import openai
 import os
-from tqdm import tqdm
 import zipfile
+from tqdm import tqdm
+import anthropic
 from dotenv import load_dotenv
 
 # Security: Store API key in environment variable
 load_dotenv()
 
-openai.api_key = os.environ.get("OPENAI_API_KEY")
+# Security: Store API key in environment variable
+anthropic_api_key = os.environ.get("ANTHROPIC_API_KEY")
+if not anthropic_api_key:
+    raise ValueError("Please set the ANTHROPIC_API_KEY environment variable")
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# Initialize the Anthropic client
+client = anthropic.Anthropic(api_key=anthropic_api_key)
 
 def get_user_input():
     """Prompts the user for application type and initial requirements.
@@ -27,31 +33,30 @@ def get_user_input():
 
     return application_type, initial_requirements
 
-def generate_file_structure(prompt):
-    """Generates the file structure for the application using OpenAI.
+def generate_file_structure(application_type):
+    """Generates the file structure for the application using Anthropic's Claude.
 
     Args:
-        prompt (str): The prompt to send to OpenAI for file structure generation.
+        application_type (str): The type of application to generate the file structure for.
 
     Returns:
         list: A list of file paths within the application structure.
     """
     try:
-        response = openai.Completion.create(
-            model="gpt-3.5-turbo",  # Confirmed available model
+        prompt = f"\n\nHuman: Please generate the file structure for a {application_type} application.\n\nAssistant:"
+        response = client.completions.create(
+            model="claude-3-opus-20240229",
             prompt=prompt,
-            max_tokens=150,  # Limit prompt length to avoid exceeding API limits
-            n=1,
-            stop=None,
-            temperature=0.7,  # Adjust temperature for creativity vs. informativeness
+            max_tokens_to_sample=150,
+            temperature=0.7
         )
-        return response.choices[0].text.strip().split('\n')
+        return response['completion'].strip().split('\n')
     except Exception as e:
         logging.error(f"Error generating file structure: {e}")
         raise
 
 def generate_files_from_structure(file_structure, initial_requirements, max_files=20):
-    """Generates the content for each file in the structure using OpenAI.
+    """Generates the content for each file in the structure using Anthropic's Claude.
 
     Args:
         file_structure (list): A list of file paths within the application structure.
@@ -66,17 +71,15 @@ def generate_files_from_structure(file_structure, initial_requirements, max_file
         if i >= max_files:
             logging.warning(f"Maximum file limit of {max_files} reached. Skipping remaining files.")
             break
-        prompt = f"Generate the content for {file_path} based on the initial requirements: {initial_requirements}"
+        prompt = f"\n\nHuman: Please generate the content for {file_path} based on the initial requirements: {initial_requirements}\n\nAssistant:"
         try:
-            response = openai.Completion.create(
-                model="gpt-3.5-turbo",
+            response = client.completions.create(
+                model="claude-3-opus-20240229",
                 prompt=prompt,
-                max_tokens=500,  # Limit content length to avoid exceeding API limits
-                n=1,
-                stop=None,
-                temperature=0.7,
+                max_tokens_to_sample=500,
+                temperature=0.7
             )
-            files[file_path] = response.choices[0].text.strip()
+            files[file_path] = response['completion'].strip()
         except Exception as e:
             logging.error(f"Error generating content for {file_path}: {e}")
             files[file_path] = "Error generating content. Please try again."
@@ -124,7 +127,7 @@ def main():
         application_type, initial_requirements = get_user_input()
 
         print("Generating file structure...")
-        file_structure = generate_file_structure(f"Generate the file structure for a {application_type} application.")
+        file_structure = generate_file_structure(application_type)
 
         print("Generating files from structure...")
         max_files = int(os.environ.get("MAX_FILES", 20))
