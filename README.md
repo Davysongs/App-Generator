@@ -143,8 +143,3 @@ project-root/
 
 If you would like to contribute to this project, please fork the repository and submit a pull request. We welcome contributions that improve functionality, fix bugs, or enhance documentation.
 
-## License
-
-This project is licensed under the MIT License. See the LICENSE file for more details.
-
-```
